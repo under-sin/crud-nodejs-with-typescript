@@ -3,11 +3,15 @@ import { config } from "dotenv";
 import { MongoGetUsersRepository } from "./repositories/get-users/mongo-get-users";
 import { GetUsersController } from "./controllers/get-users/get-users";
 import { MongoClient } from "./database/mongo";
+import { MongoCreateUserRepository } from "./repositories/create-user/mongo-create-user";
+import { CreateUserController } from "./controllers/create-user/create-user";
 
 const main = async () => {
   config();
 
   const app = express();
+
+  app.use(express.json());
 
   await MongoClient.Connect();
 
@@ -18,10 +22,25 @@ const main = async () => {
 
     const { body, statusCode } = await getUsersController.Handle();
 
-    res.send(body).status(statusCode);
+    res.status(statusCode).send(body);
   });
 
-  const port = process.env.PORT || 8001;
+  app.post("/users", async (req, res) => {
+    const mongoCreateUserRepository = new MongoCreateUserRepository();
+
+    const createUserCOntroller = new CreateUserController(
+      mongoCreateUserRepository
+    );
+
+    const { statusCode, body } = await createUserCOntroller.handle({
+      body: req.body,
+    });
+
+    // o status sempre tem que vir antes do send
+    res.status(statusCode).send(body);
+  });
+
+  const port = process.env.PORT || 8000;
 
   app.listen(port, () => console.log(`listening on port ${port}!`));
 };
